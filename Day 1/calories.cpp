@@ -46,6 +46,48 @@ void findGreatestCal(std::vector<std::vector<int>>& elf_food){
     std::cout << "Max calories account between elfs: " << current_max_cal << '\n';
 }
 
+void shuffleTop3Cal(const unsigned to_add_cal, unsigned* top_3_cal){
+    //    0    1   2
+     // [1st, 2nd, 3rd]
+    if (to_add_cal < top_3_cal[1]){ // if its <2nd -> new 3rd place value
+        top_3_cal[2] = to_add_cal; // if new 3rd pos -> replace old 3rd value and return
+        return; 
+    }
+
+    if (to_add_cal < top_3_cal[0]){ // if new 2nd place value
+        unsigned temp_hold {top_3_cal[1]}; // store old 2nd (current 2nd place)
+        top_3_cal[1] = to_add_cal; // read-in new 2nd
+        top_3_cal[2] = temp_hold;
+        return;
+    } else{
+        // new 1st place - shuffle all other values down
+        unsigned hold_2nd {top_3_cal[0]}, hold_3rd {top_3_cal[1]};
+        top_3_cal[0] = to_add_cal; // new 1st
+        top_3_cal[1] = hold_2nd; // new 2nd (old 1st)
+        top_3_cal[2] = hold_3rd; // new 3rd (old 2nd)
+    }
+}
+
+void findTop3GreatestCal(std::vector<std::vector<int>>& elf_food){
+
+     // main body is identical to find single greatest func
+    unsigned total_cal {0}, current_max_cal {0};
+    unsigned top_3_cal[3] {0,0,0};
+
+    for (const auto& elf_vec : elf_food){
+        for (const auto& count_cal : elf_vec){
+            total_cal += count_cal;
+        }
+        if (total_cal > top_3_cal[2]) shuffleTop3Cal(total_cal, top_3_cal);  // if > current 3rd place, shuffle top 3 with new value
+        total_cal = 0; // set count back to 0 prior to next run
+    }
+
+    std::cout << "Greatest calorie count: " << top_3_cal[0] << ".\nSecond greatest calorie count: " << top_3_cal[1]
+        << ".\nThird greatest calorie count: " << top_3_cal[2] << '\n'; 
+
+    std::cout << "Sum of top 3 calorie counts: " << (top_3_cal[0] + top_3_cal[1] + top_3_cal[2]) << '\n';
+}
+
 int main(){
     std::ifstream cal_file;
     cal_file.open("number_of_calories.txt");
@@ -67,6 +109,9 @@ int main(){
 
     // find elf with greatest total calorie count
     findGreatestCal(elf_food);
+
+    // find product of top 3 calorie counts
+    findTop3GreatestCal(elf_food);
 
     return 0;
 }
