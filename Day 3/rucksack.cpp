@@ -66,18 +66,20 @@ unsigned threeElfBagType(const std::vector<std::string>* bag_items){
         char match_line2_char {};
         bool match_found {false};
         for (const char line2_char : bag_items->at(idx+1)){
+                // if current char exists in first line -> store it and pass it to next line loop
             if ((iter = char_map.find(line2_char)) != char_map.end()){
                 match_line2_char = iter->first; // hold matching char
                 for (const char line3_char : bag_items->at(idx+2)){
                     if (line3_char == match_line2_char){ // if found match on line 2 && 3
-                        priority_sum += l_alpha_as_int(match_line2_char); 
-                        match_found = true;
-                        break;
+                        priority_sum += l_alpha_as_int(match_line2_char); // compute sum based on char
+                        match_found = true; // req. to break out of previous line loop
+                        break; // break out for 3rd line loop
                     }
                 }
-                if (match_found) break;
+                if (match_found) break; // break out of 2nd line loop
             }
         }
+        char_map.erase(char_map.begin(), char_map.end()); // re-set map
     }
     return priority_sum;
 }
@@ -91,14 +93,13 @@ int main(){
 
          // stream file into vector of strings 
         streamBagItems(itemsf, &bag_items);
+        itemsf.close();
 
-         // determine each bags type
+         // determine each bags type - part 1 solution
         std::cout << "Sum of priority items: " << getBagTypes(&bag_items) << '\n';
 
-         // find 3-elf bag type
+         // find 3-elf bag type - part 2 solution
         std::cout << "3-Elf priority item sum: " << threeElfBagType(&bag_items) << '\n';
     }
-
-    itemsf.close();
     return 0;
 }
