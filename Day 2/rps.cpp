@@ -2,7 +2,7 @@
 #include <fstream>
 #include <map>
 
-unsigned stratScoreAsIs(std::fstream& file){
+unsigned stratScoreAsIs(std::ifstream& file){
 
     static const std::map<char, int> A_map {
         {'X', 3},
@@ -39,7 +39,7 @@ unsigned stratScoreAsIs(std::fstream& file){
     return total_score;
 }
 
-unsigned requiredOutcomeScore(std::fstream& file){
+unsigned requiredOutcomeScore(std::ifstream& file){
 
     static const std::map<char, char> A_map {
         {'X', 'C'},
@@ -89,7 +89,7 @@ unsigned requiredOutcomeScore(std::fstream& file){
 
 int main(){
 
-    std::fstream strat_guide;
+    std::ifstream strat_guide;
     strat_guide.open("strategy_guide.txt");
 
     if (!!strat_guide){
