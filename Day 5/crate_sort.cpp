@@ -3,7 +3,7 @@
 #include <stack>
 #include <vector>
 #include <map>
-#include <utility>
+#include <string>
 #include "crate_sort_funcs.hpp"
 
 int main(){
@@ -30,6 +30,14 @@ int main(){
          // part 1 solution
         std::clog << "Crates at the top of the stack after the shuffle: " 
             << shuffleCrates(move_vec, stack_vec) << '\n';
+        
+         // represent crates as strings opposed to stacks for part 2
+        std::vector<std::string> crate_str (9);
+        createStrings(starting_crates, crate_str);
+
+         // part 2 solution
+        std::clog << "Crates at top of the stack after shuffling as groups: "
+            << shuffleCratesGroup(move_vec, crate_str) << '\n';
     }
 
     return 0;

@@ -125,4 +125,49 @@ std::string shuffleCrates(std::vector<std::vector<int>>& move_vec,
     return ss.str();
 }
 
+void createStrings(std::vector<std::vector<char>>& crates, std::vector<std::string>& strs){
+    
+    size_t str_idx {0}; // for indexing into vec of strings 
+    std::stringstream ss; // to create single string out of vec of chars
+
+    for (const auto& crate : crates){
+        for (const auto& cval : crate){
+            ss << cval; // loop through current crate -> stream into ss to create concact string
+        }
+        ss >> strs.at(str_idx++); // stream into current string -> increment indexer
+        ss.clear(); // reset stream flags
+    }
+
+    for (std::string& str : strs){
+        while (str.back() == '?') str.pop_back();
+    }
+}
+
+std::string shuffleCratesGroup(std::vector<std::vector<int>>& move_vec, std::vector<std::string>& crates){
+
+    std::string substr{}; // hold sub str
+    size_t substrpos {0};
+
+    for (const std::vector<int>& order : move_vec){
+         // get starting string idx for creating sub string (move from vec size - amount to be removed)
+        substrpos =  crates.at(order.at(1)-1).size() - order.at(0);
+         // create sub string
+        substr = crates.at(order.at(1)-1).substr(substrpos, order.at(0));
+         // append sub str to recieving string (i.e., crate stack)
+        crates.at(order.at(2)-1).append(substr);
+         // erase substr
+        substr.erase();
+
+        for (int remove_count {0}; remove_count < order.at(0); ++remove_count){
+            crates.at(order.at(1)-1).pop_back(); // remove values that were just appended to other string
+        }
+    }
+
+     // loop through shuffled string -> crate single string based on back values
+    std::stringstream ss;
+    for (const std::string& str : crates) ss << str.back();
+
+    return ss.str();
+}
+
 #endif
