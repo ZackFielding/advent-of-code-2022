@@ -1,104 +1,130 @@
 #ifndef PATH_FUNCS_HPP
-#define PATH_FUNCS_HPP
-#include <iostream>
+#define PATH_FUNCS_HPP 
+#include <iostream> 
 #include <fstream>
 #include <vector>
-#include <unordered_map>
 #include <unordered_set>
-#include <queue>
-#include <cmath>
+#include <unordered_map>
 
-using graph = std::unordered_map<int, std::unordered_set<int>>;
+void readFile(std::ifstream& file, std::vector<char> *vec){
+    char chold {};
+    while (file >> chold){
+        if (chold != 13 && chold != 10) vec->push_back(chold);
+    }
+    return;
+}
 
-template <typename VEC_T>
-struct fmdarray{
-    std::vector<VEC_T> vec;
-    int dim_size;
+int getLineLength(std::ifstream& file){
+    // reset get pointer
+    file.clear();
+    file.seekg(0L, std::ios_base::beg);
+    char buffer [1000]; // assumes there will be <1000 char in line
+    file.getline(buffer, sizeof buffer);
+    return (int)(file.gcount()-1);
+}
+
+class graph; // fwd decl for friend decl
+class vertex {
+    int id; // unique id
+    std::unordered_set<vertex*> adjacent_set;
+    vertex(int a_id) : id {a_id}, adjacent_set {} {};
+    friend class ::graph;
 };
 
-template <typename VEC_T>
-void readFile(std::ifstream& file, fmdarray<VEC_T>* v){
-    char c;
-    while (file.get(c)){
-        if (c >= 65 && c <= 122){
-            v->vec.push_back(c-97);
-        }
+class graph {
+    std::unordered_map<int, vertex*> all_vertex_map;
+    vertex *start;
+    vertex *end;
+public:
+    graph() : all_vertex_map {}, start {nullptr}, end {nullptr} {}
+    ~graph() { for (std::pair<int, vertex*> v : all_vertex_map) delete v.second; }
+    vertex* addVertex(int ident, const char letter){
+        // check to see if vertex has already been created
+         // if ident does not exist => create
+        auto check_map = all_vertex_map.find(ident);
+        vertex* vptr {nullptr};
+        if (check_map == all_vertex_map.end()){
+            vptr = new vertex{ident};
+            all_vertex_map.insert({ident, vptr});
+             // handle Start && End cases
+            if (letter == 'S') start = vptr;
+            else if (letter == 'E') end = vptr;
+        } else vptr = check_map->second;
+        return vptr;
+    }
+
+    void addAdjacent(vertex* current, int ident, const char a_letter){
+         // get vertex ptr to adajcent
+        auto check_map = all_vertex_map.find(ident);
+        vertex* to_add {nullptr};
+        if (check_map == all_vertex_map.end()) to_add = this->addVertex(ident, a_letter);
+        else to_add = check_map->second;
+         // add to current vertex's adjacent list
+        if (current == nullptr) std::clog << "NULL";
+        current->adjacent_set.insert(to_add); 
+        return;
+    }
+
+    void createGraph(std::vector<char> *, const int);
+    void check_add(std::vector<char> *, const int, const int, vertex* current);
+    void test();
+};
+
+void graph::check_add(std::vector<char> *vec, const int id, const int a_id, vertex* current){
+    // handle Start && End cases
+    int current_val {0}, adjacent_val {0};
+
+    if (vec->at(id) == 'S' || vec->at(id) == 'E'){
+        current_val = (vec->at(id) == 'S') ? 97 : 122; 
+    } else current_val = vec->at(id);
+    
+    if (vec->at(a_id) == 'S' || vec->at(a_id) == 'E'){
+        adjacent_val = (vec->at(a_id) == 'S') ? 97 : 122; 
+    } else adjacent_val = vec->at(a_id);
+
+    int step_check = current_val - adjacent_val;
+    if (step_check == -1 || step_check >= 0){
+        this->addAdjacent(current, a_id, vec->at(a_id));
     }
 }
 
-template <typename VEC_T>
-std::pair<int, int> createGraph(graph *g, fmdarray<VEC_T> *v){
-    // iterate through flat array
-    const int dim {v->dim_size};
-    std::pair<int, int> sep;
+void graph::createGraph(std::vector<char> *vec, const int line_length){
 
-    // same check for all conditions
-    const auto l_check_insert = [&g](int curv, int adjav, int curp, int adjap)->void{
-        if ( (adjav == -14 || adjav == -28 || curv-adjav >= -1) ||
-            (curv == -14 && (adjav == 0 || adjav == 1)) ){
-            g->find(curp)->second.insert(adjap);
-        }
-    };
+    vertex *current {nullptr};
+    int above_id {line_length * -1}, below_id {line_length}, right_id {1}, left_id {-1};
+    int cc {0};
 
-    for (int idx {0}; idx < (int)v->vec.size(); ++idx){
-        // create new map key
-        (*g)[idx];
-        // check to see if start or end vertex
-        if (v->vec.at(idx) == -14 || v->vec.at(idx) == -28){
-            if (v->vec.at(idx) == -14) sep.first = idx;
-            else sep.second = idx;
-        }
+    for (int id {0}; id < (int)vec->size(); ++id){
 
-        // check above 
-        if (idx-dim >= 0){
-            l_check_insert(v->vec.at(idx), v->vec.at(idx-dim), idx, idx-dim);
-        }
-        // check below
-        if (idx+dim < (int)v->vec.size()){
-            l_check_insert(v->vec.at(idx), v->vec.at(idx+dim), idx, idx+dim);
-        }
+        current = this->addVertex(id, vec->at(id)); 
 
-        // check right -> mod stops those with no rightward edges (i.e., end of row)
-        if (idx % (dim-1) != 0 && idx + 1 < (int)v->vec.size()){
-            l_check_insert(v->vec.at(idx), v->vec.at(idx+1), idx, idx+1);
-        }
+         // above
+        if (above_id >= 0) this->check_add(vec, id, above_id, current);
+        
+         // below
+        if (below_id < (int)vec->size()) this->check_add(vec, id, below_id, current);
 
-        // check left -> mod stops those with no leftward edges (i.e., start of new row)
-        if (idx % dim != 0 && idx - 1 >= 0){
-            l_check_insert(v->vec.at(idx), v->vec.at(idx-1), idx, idx-1);
-        }
+         // left [CRASH]
+        if (left_id >= 0 && (cc % line_length != 0)) this->check_add(vec, id, left_id, current);
+        else if (cc % line_length == 0) cc = 0; // reset counter
+
+         // right
+        if (cc < (line_length-1)) this->check_add(vec, id, right_id, current);
+        ++cc;
+        ++above_id; ++below_id; ++right_id; ++left_id;
     }
-    return sep;
+    return;
 }
 
-// DOES NOT WORK
-// get stuck in infinite loop, stuck in {0,0} in pq
-int findShortestPath(graph* g, std::pair<int, int>* sep){
-
-    using INTP = std::pair<int, int>;
-    // priority que to hold next best case node to visit
-    // pq uses a cusomt lambda comparator to ensure the smallest pair.second values are at the top
-    auto l_comp = [](const INTP& a, const INTP& b) { return b.second > a.second; };
-    std::priority_queue<INTP, std::vector<INTP>, decltype(l_comp)> pq(l_comp);
-    pq.push({sep->first,0});
-
-    // array to hold distances betwen each start->all other vertices
-    std::vector<int> dist (g->size(), (int)INFINITY);
-
-    int vv {0}, cd {0};
-    while (!pq.empty()){
-        // access top of priority queue to determine what vertex to visit
-        vv = pq.top().second; 
-        ++cd; // all edges == 1
-
-        // iterate through this vertices adjacent vertices && add to pq with updated distances
-        for (const int& t : g->find(vv)->second){
-            pq.push({t, cd});
-            if (cd < dist.at(t)) dist.at(t) = cd;
+void graph::test(){
+    for (auto p : this->all_vertex_map){
+        std::printf("%d adjacents are: ", p.second->id);
+        for (auto i : p.second->adjacent_set){
+            std::cout << i->id << ' ';
         }
-        pq.pop(); // remove node just visited
+        std::cout << '\n';
     }
-    return dist.at(5);
+    return;
 }
 
 #endif

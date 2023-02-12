@@ -3,35 +3,27 @@
 #include <vector>
 #include "path_funcs.hpp"
 
+/* 
+- Data is given as a text file with an compile-time unknown row && column number
+- Data will be read into a 1D array to simplify interpretation
+*/
+
 int main(){
-    std::ifstream file("path_td.txt");
-    
-    if (!!file){
-        // use gcount() to determine number of elements in each row
-        {
-            char t [500];
-            file.getline(t, 500);
-        }
-         // flat multi dimensional array
-        fmdarray<int> vertices;
+    std::ifstream file {"path_td.txt"};
 
-        // gcount() includes delim char in gcount() so adjust
-        vertices.dim_size = (int)file.gcount() - 1;
-        file.seekg(0L, std::ios_base::beg);
-
-        readFile<int> (file, &vertices);
+    if (file){
+         // read character data into 1D vector
+        std::vector<char> vec;
+        vec.reserve(1000); // reserve kb of mem to prevent constant reallocation
+        readFile(file, &vec); // [PASS] 
+        int line_length { getLineLength(file) };
         file.close();
+        vec.shrink_to_fit(); 
 
-        graph g;
-        // create graph && get start-end-pair
-        std::pair <int, int> sep {createGraph<int> (&g, &vertices)};
-
-        // test
-        printf("%d\n", g.find(0)->second.size());
-        //printf("Shortest distance to end is %d\n",findShortestPath(&g, &sep));
-
-    } else {
-        std::cerr << "Error in file open.\n";
+        // create graph
+        graph g {};
+        g.createGraph(&vec, line_length);
+        g.test();
     }
     return 0;
 }
