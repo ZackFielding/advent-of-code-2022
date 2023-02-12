@@ -128,27 +128,19 @@ void graph::test(){
     return;
 }
 
-// NOTHING BELOW THIS POINT has been tested and is NOT COMPLETED
 std::pair<vertex*, int> getNextVertex(std::unordered_map<vertex*, int> *m_cheapest_cost, std::unordered_set<vertex*> *s_visited){
     
-     // cache all known vertices that have not been visisted
-    std::vector<std::pair<vertex*, int>> not_visited {};
-    for (const auto cheap_p : *m_cheapest_cost){
-        if (s_visited->find(cheap_p.first) == s_visited->end()){
-            not_visited.push_back(cheap_p);
+    std::pair<vertex*, int> next {nullptr, INT32_MAX}; // max to compare to
+    std::unordered_set<vertex*>::const_iterator citer;
+    for (auto p : *m_cheapest_cost){
+        citer = s_visited->find(p.first);
+        if (citer  == s_visited->end()){
+            if (p.second < next.second){
+                next = p;
+            }
         }
     }
-
-    if (not_visited.size() == 0) return {nullptr, 0};
-    if (not_visited.size() == 1) return not_visited[0];
-    
-    auto to_return  = not_visited[0];
-    for (std::size_t idx {1}; idx < not_visited.size(); ++idx){
-        if (not_visited[idx].second < to_return.second){
-            to_return = not_visited[idx];
-        }
-    }
-    return to_return;
+    return next;
 }
 
 int graph::shortestNumberOfSteps(){
@@ -159,24 +151,35 @@ int graph::shortestNumberOfSteps(){
     vertex* current {this->start};
 
     std::unordered_map<vertex*, int>::iterator iter;
-    int acc_steps {1};
+    std::pair<vertex*, int> next_pair {nullptr, 0};
+
+    int length {0}, acc_steps {0};
     while (1){
         s_visited.insert(current); // mark as visited
-
+        length = acc_steps + 1; // update distance (all edges weight are 1)
         for (vertex* p : current->adjacent_set){
             iter = m_cheapest_cost.find(p);
             if (iter == m_cheapest_cost.end()){ // if adjacent has not been discovered yet
-                m_cheapest_cost.insert({p, acc_steps});
+                m_cheapest_cost.insert({p, length});
             } else {
                 if (acc_steps < iter->second){
-                    iter->second = acc_steps;
+                    iter->second = length;
                 }
             }
             
         }
-
-        ++acc_steps;
+        // determine next vertex to visit [`nullptr` means all nodes have been visited]
+        next_pair = getNextVertex(&m_cheapest_cost, &s_visited); 
+        if (next_pair.first != nullptr){
+            current = next_pair.first;
+            acc_steps = next_pair.second;
+        } else {
+            break;
+        }
     }
+
+    // find `end` in cheapest cost map
+    return m_cheapest_cost.find(this->end)->second;
 }
 
 #endif

@@ -9,7 +9,7 @@
 */
 
 int main(){
-    std::ifstream file {"path_td.txt"};
+    std::ifstream file {"path_ad.txt"};
 
     if (file){
          // read character data into 1D vector
@@ -23,7 +23,10 @@ int main(){
         // create graph
         graph g {};
         g.createGraph(&vec, line_length);
-        g.test();
+        //g.test();
+        //  Part 1 solution
+        std::printf("The shortest number of steps to reach the end position is %d.\n", g.shortestNumberOfSteps());
+
     }
     return 0;
 }
