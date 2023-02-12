@@ -25,8 +25,11 @@ int main(){
         g.createGraph(&vec, line_length);
         //g.test();
         //  Part 1 solution
-        std::printf("The shortest number of steps to reach the end position is %d.\n", g.shortestNumberOfSteps());
-
+        std::unordered_map<vertex*, int> m_cheapest_cost {};
+        std::printf("[P1] The shortest number of steps to reach the end position is %d.\n", g.shortestNumberOfSteps(g.getStart()));
+        std::cout << "Computing optimal starting point ";
+        // Part 2 solution
+        std::printf("[P2] The shortest number of steps from any lowest starting point: %d.\n", g.findOptimalStartingVertex());
     }
     return 0;
 }

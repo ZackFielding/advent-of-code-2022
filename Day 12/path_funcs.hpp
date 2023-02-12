@@ -26,6 +26,7 @@ int getLineLength(std::ifstream& file){
 class graph; // fwd decl for friend decl
 class vertex {
     int id; // unique id
+    char height;
     std::unordered_set<vertex*> adjacent_set;
     vertex(int a_id) : id {a_id}, adjacent_set {} {};
     friend class ::graph;
@@ -35,20 +36,32 @@ class graph {
     std::unordered_map<int, vertex*> all_vertex_map;
     vertex *start;
     vertex *end;
+    std::unordered_set<vertex*> lowest_point_set;
 public:
-    graph() : all_vertex_map {}, start {nullptr}, end {nullptr} {}
+    graph() : all_vertex_map {}, start {nullptr}, end {nullptr}, lowest_point_set {} {}
     ~graph() { for (std::pair<int, vertex*> v : all_vertex_map) delete v.second; }
     vertex* addVertex(int ident, const char letter){
         // check to see if vertex has already been created
          // if ident does not exist => create
         auto check_map = all_vertex_map.find(ident);
         vertex* vptr {nullptr};
+
         if (check_map == all_vertex_map.end()){
+
             vptr = new vertex{ident};
             all_vertex_map.insert({ident, vptr});
+
              // handle Start && End cases
-            if (letter == 'S') start = vptr;
-            else if (letter == 'E') end = vptr;
+            if (letter == 'S'){
+                start = vptr;
+            }
+            else if (letter == 'E'){
+                end = vptr;
+            }
+
+            // track lowest point vertices (for p2 solution)
+            if (letter == 'a' || letter == 'S') lowest_point_set.insert(vptr); 
+
         } else vptr = check_map->second;
         return vptr;
     }
@@ -68,7 +81,9 @@ public:
     void createGraph(std::vector<char> *, const int);
     void check_add(std::vector<char> *, const int, const int, vertex* current);
     void test();
-    int shortestNumberOfSteps();
+    int shortestNumberOfSteps(vertex*);
+    int findOptimalStartingVertex();
+    vertex* getStart() { return start; }
 };
 
 void graph::check_add(std::vector<char> *vec, const int id, const int a_id, vertex* current){
@@ -143,12 +158,12 @@ std::pair<vertex*, int> getNextVertex(std::unordered_map<vertex*, int> *m_cheape
     return next;
 }
 
-int graph::shortestNumberOfSteps(){
+int graph::shortestNumberOfSteps(vertex* start){
 
-    std::unordered_map<vertex*, int> m_cheapest_cost {};
-    m_cheapest_cost.insert({this->start, 0});
+    std::unordered_map<vertex*, int> m_cheapest_cost;
+    m_cheapest_cost.insert({start, 0});
     std::unordered_set<vertex*> s_visited {};
-    vertex* current {this->start};
+    vertex* current {start};
 
     std::unordered_map<vertex*, int>::iterator iter;
     std::pair<vertex*, int> next_pair {nullptr, 0};
@@ -178,8 +193,23 @@ int graph::shortestNumberOfSteps(){
         }
     }
 
-    // find `end` in cheapest cost map
-    return m_cheapest_cost.find(this->end)->second;
+    // find `end` in cheapest cost map => if there's no valid way to end, return -1
+    auto check_end = m_cheapest_cost.find(this->end);
+    if (check_end != m_cheapest_cost.end()) return check_end->second;
+    return -1;
+}
+
+int graph::findOptimalStartingVertex(){
+    
+    int shortest_count {INT32_MAX}, cache {0};
+    for (vertex* cur_lowest_start : this->lowest_point_set){
+        cache = this->shortestNumberOfSteps(cur_lowest_start);
+        if (cache == -1) continue; // skip if no valid path to end found
+        if (cache < shortest_count) shortest_count = cache; 
+        std::cout << '.';
+    }
+    std::cout << '\n';
+    return shortest_count;
 }
 
 #endif
