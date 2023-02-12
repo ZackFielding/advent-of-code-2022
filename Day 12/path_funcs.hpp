@@ -68,6 +68,7 @@ public:
     void createGraph(std::vector<char> *, const int);
     void check_add(std::vector<char> *, const int, const int, vertex* current);
     void test();
+    int shortestNumberOfSteps();
 };
 
 void graph::check_add(std::vector<char> *vec, const int id, const int a_id, vertex* current){
@@ -125,6 +126,57 @@ void graph::test(){
         std::cout << '\n';
     }
     return;
+}
+
+// NOTHING BELOW THIS POINT has been tested and is NOT COMPLETED
+std::pair<vertex*, int> getNextVertex(std::unordered_map<vertex*, int> *m_cheapest_cost, std::unordered_set<vertex*> *s_visited){
+    
+     // cache all known vertices that have not been visisted
+    std::vector<std::pair<vertex*, int>> not_visited {};
+    for (const auto cheap_p : *m_cheapest_cost){
+        if (s_visited->find(cheap_p.first) == s_visited->end()){
+            not_visited.push_back(cheap_p);
+        }
+    }
+
+    if (not_visited.size() == 0) return {nullptr, 0};
+    if (not_visited.size() == 1) return not_visited[0];
+    
+    auto to_return  = not_visited[0];
+    for (std::size_t idx {1}; idx < not_visited.size(); ++idx){
+        if (not_visited[idx].second < to_return.second){
+            to_return = not_visited[idx];
+        }
+    }
+    return to_return;
+}
+
+int graph::shortestNumberOfSteps(){
+
+    std::unordered_map<vertex*, int> m_cheapest_cost {};
+    m_cheapest_cost.insert({this->start, 0});
+    std::unordered_set<vertex*> s_visited {};
+    vertex* current {this->start};
+
+    std::unordered_map<vertex*, int>::iterator iter;
+    int acc_steps {1};
+    while (1){
+        s_visited.insert(current); // mark as visited
+
+        for (vertex* p : current->adjacent_set){
+            iter = m_cheapest_cost.find(p);
+            if (iter == m_cheapest_cost.end()){ // if adjacent has not been discovered yet
+                m_cheapest_cost.insert({p, acc_steps});
+            } else {
+                if (acc_steps < iter->second){
+                    iter->second = acc_steps;
+                }
+            }
+            
+        }
+
+        ++acc_steps;
+    }
 }
 
 #endif
