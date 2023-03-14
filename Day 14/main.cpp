@@ -28,10 +28,10 @@ int main(int argc, char** argv){
 			rf = std::get<3>(tup);
 		}
 
-		// std::printf("MIN X : %d, MAX X : %d, MAX Y : %d.\n", min_x, max_x, max_y);
+		std::printf("MIN X : %d, MAX X : %d, MAX Y : %d.\n", min_x, max_x, max_y);
 
 		// test
-		// printRockForm(&rf);
+		printRockForm(&rf);
 
 		// create graph
 		const int gsize = (max_x - min_x + 1) * (max_y+1);
@@ -54,6 +54,7 @@ int main(int argc, char** argv){
 		// run sand simulation
 		node *start_node = graph[500-min_x];
 		int p1_ans = runSandSimulation(start_node, graph, gsize, rsize);	
+		visualizeRockFormations(graph, gsize, rsize);
 		std::printf("%d pieces of sand fall before infinite loop.\n", p1_ans);
 
 		for (int d {0}; d < gsize; ++d) delete graph[d];

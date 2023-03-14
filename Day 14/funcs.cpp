@@ -58,12 +58,14 @@ std::tuple<int, int, int, ROCK_FORM> getRockFormations(std::ifstream& file){
 
 			// if last value => will result in npos
 			if (epos == sv.npos){
-				epos = sv.size() - 1;
+				epos = sv.size();
 			}
 
 			y = sv.substr(spos, epos-spos);
 			ss << y;
-			ss >> std::dec >> y_int;
+			if (!(ss >> std::dec >> y_int)){
+				std::cout << spos << " ... " << epos-spos << '\n';
+			}
 			ss.clear();
 
 			// check to see if max
@@ -156,13 +158,13 @@ void createRockFormations(ROCK_FORM* rf, node** graph, const int min_x, const in
 	for (const auto& v : *rf){
 		// iterate across pairs
 		// (can't use range as need to stop at last-1 pair)
-		for (std::size_t p {0}; p < v.size()-1; ++p){
+		for (std::size_t p {0}; p < v.size(); ++p){
 
 			const int *_greater_x {nullptr}, *_lesser_x {nullptr};
 			const int *_greater_y {nullptr}, *_lesser_y {nullptr};
 
 			// if same x or y values found => have a cont. rock
-			if (v.at(p).first == v.at(p+1).first || v.at(p).second == v.at(p+1).second){
+			if ( ( (p + 1) < v.size() ) && (v.at(p).first == v.at(p+1).first || v.at(p).second == v.at(p+1).second) ){
 
 				// it's not garunteed the leading pair will be less than
 				// following pair => to make looping easier, do this
@@ -188,6 +190,9 @@ void createRockFormations(ROCK_FORM* rf, node** graph, const int min_x, const in
 						graph[_ni(_x, _y)] -> filled_with = FILLED::ROCK;
 					}
 				}
+			} else {
+				// no matching pair => just draw individual rock	
+				graph[_ni(v.at(p).first, v.at(p).second)] -> filled_with = FILLED::ROCK;
 			}
 		}
 	}
@@ -291,8 +296,8 @@ int runSandSimulation(node *start_node, node** graph, const int gsize, const int
 			break;
 		}
 
-		visualizeRockFormations(graph, gsize, row_size);
-		std::cout << "\n ====================================================================== \n";
+		//visualizeRockFormations(graph, gsize, row_size);
+		//std::cout << "\n ====================================================================== \n";
 	}
 	return sim_runs;
 }
