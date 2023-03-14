@@ -33,4 +33,6 @@ void createRockFormations(ROCK_FORM* rf, node** graph, const int min_x, const in
 
 void visualizeRockFormations(node** graph, const int gsize, const int row_size);
 
+int runSandSimulation(node *start_node, node** graph, const int gsize, const int row_size);
+
 #endif

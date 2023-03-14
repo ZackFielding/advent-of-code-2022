@@ -39,6 +39,7 @@ int main(int argc, char** argv){
 		node** graph = new node*[gsize];
 	
 		std::printf("gsize: %d .. rsize: %d .. csize: %d\n", gsize, rsize, max_y+1);
+		std::printf("min x: %d .. max x: %d .. max y: %d.\n", min_x, max_x, max_y);
 
 		// untested
 		initializeGraph(graph, gsize, rsize);
@@ -48,6 +49,12 @@ int main(int argc, char** argv){
 
 		// for testing
 		visualizeRockFormations(graph, gsize, rsize);
+
+
+		// run sand simulation
+		node *start_node = graph[500-min_x];
+		int p1_ans = runSandSimulation(start_node, graph, gsize, rsize);	
+		std::printf("%d pieces of sand fall before infinite loop.\n", p1_ans);
 
 		for (int d {0}; d < gsize; ++d) delete graph[d];
 		delete [] graph;

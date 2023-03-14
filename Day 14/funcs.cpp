@@ -195,7 +195,17 @@ void createRockFormations(ROCK_FORM* rf, node** graph, const int min_x, const in
 
 void visualizeRockFormations(node** graph, const int gsize, const int row_size){
 	
+	for (int i {0}; i < row_size; ++i){
+		if (i % 10 == 0) std::cout << "0 ";
+		else std::cout << "  ";
+	}
+	std::cout << '\n';
+
 	for (int n {0}; n < gsize; ++n){
+		if (n == 43){
+			std::cout << "+ ";
+			continue;
+		}
 		switch (graph[n] -> filled_with){
 			case (FILLED::NOT_FILLED): {
 				std::cout << ". ";
@@ -218,4 +228,71 @@ void visualizeRockFormations(node** graph, const int gsize, const int row_size){
 		
 		if ( (n+1) % row_size == 0) std::cout << '\n';
 	}
+}
+
+int runSandSimulation(node *start_node, node** graph, const int gsize, const int row_size){
+	// all sand starts at row 500 position
+	// sand falls until it can't move down, down-left, or down-right
+	// once a peice of sand encounters a viable nullptr
+	// stop simulation
+	
+	int sim_runs {0};
+	node *cur_node {nullptr};
+	bool INFNITE_FOUND {false};
+
+	while (!INFNITE_FOUND){
+		cur_node = start_node;
+		
+		while (1){
+			
+			// should not be needed
+			if (cur_node -> filled_with == FILLED::SAND){
+				INFNITE_FOUND = true;
+				break;
+			}
+
+			// direct below first
+			if (cur_node -> direct_below == nullptr){
+				INFNITE_FOUND = true;
+				break;
+			} else {
+				if (cur_node -> direct_below -> filled_with == FILLED::NOT_FILLED){
+					cur_node = cur_node -> direct_below;
+					continue;
+				}
+			}
+	
+			// below left next
+			if (cur_node -> below_left == nullptr){
+				INFNITE_FOUND = true;
+				break;
+			} else {
+				if (cur_node -> below_left -> filled_with == FILLED::NOT_FILLED){
+					cur_node = cur_node -> below_left;
+					continue;
+				}
+			}
+	
+			// below right last
+			if (cur_node -> below_right == nullptr){
+				INFNITE_FOUND = true;
+				break;
+			} else {
+				if (cur_node -> below_right -> filled_with == FILLED::NOT_FILLED){
+					cur_node = cur_node -> below_right;
+					continue;
+				}
+			}
+
+
+			// if sand can't got anywhere => break and run next simulation
+			cur_node -> filled_with = FILLED::SAND;
+			++sim_runs;
+			break;
+		}
+
+		visualizeRockFormations(graph, gsize, row_size);
+		std::cout << "\n ====================================================================== \n";
+	}
+	return sim_runs;
 }
