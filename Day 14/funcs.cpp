@@ -110,7 +110,7 @@ void initializeGraph(node **graph, const int gsize, const int row_size){
 		// DIRECT_BELOW NODE
 		// IF last row => will be null
 		if ( (n + row_size) >= gsize ){
-			cnode->direct_below = nullptr;
+			cnode->adj_node_array[0] = nullptr;
 		} else {
 			// create new node => index into graph => set to below
 			// THIS ONLY NEEDS TO HAPPEN FOR FIRST NODE
@@ -122,25 +122,25 @@ void initializeGraph(node **graph, const int gsize, const int row_size){
 			}
 
 			// set
-			cnode -> direct_below = graph[n + row_size];
+			cnode -> adj_node_array[0] = graph[n + row_size];
 		}
 
 		// BELOW_LEFT NODE
 		if ( n % row_size == 0 || (n + row_size >= gsize) ){
-			cnode -> below_left = nullptr;
+			cnode -> adj_node_array[1] = nullptr;
 		} else {
 			// bottom left node will already exist
 			// [created as direct_below for previous node]
-			cnode -> below_left = graph[n+row_size-1];
+			cnode -> adj_node_array[1] = graph[n+row_size-1];
 		}
 
 		// BELOW_RIGHT NODE
 		if ( ( (n+1) % row_size == 0 ) || (n + row_size >= gsize) ){
-			cnode -> below_right = nullptr;
+			cnode -> adj_node_array[2] = nullptr;
 		} else {
 			temp = new node {};	
 			++track_new;
-			cnode -> below_right = temp;
+			cnode -> adj_node_array[2] = temp;
 			graph[n+row_size+1] = temp;
 		}
 		//std::printf("%d. allocs => %d.\n", n, track_new);
@@ -244,6 +244,7 @@ int runSandSimulation(node *start_node, node** graph, const int gsize, const int
 	int sim_runs {0};
 	node *cur_node {nullptr};
 	bool INFNITE_FOUND {false};
+	bool ADJ_EMPTY {false};
 
 	while (!INFNITE_FOUND){
 		cur_node = start_node;
@@ -256,39 +257,24 @@ int runSandSimulation(node *start_node, node** graph, const int gsize, const int
 				break;
 			}
 
-			// direct below first
-			if (cur_node -> direct_below == nullptr){
-				INFNITE_FOUND = true;
-				break;
-			} else {
-				if (cur_node -> direct_below -> filled_with == FILLED::NOT_FILLED){
-					cur_node = cur_node -> direct_below;
-					continue;
-				}
-			}
-	
-			// below left next
-			if (cur_node -> below_left == nullptr){
-				INFNITE_FOUND = true;
-				break;
-			} else {
-				if (cur_node -> below_left -> filled_with == FILLED::NOT_FILLED){
-					cur_node = cur_node -> below_left;
-					continue;
-				}
-			}
-	
-			// below right last
-			if (cur_node -> below_right == nullptr){
-				INFNITE_FOUND = true;
-				break;
-			} else {
-				if (cur_node -> below_right -> filled_with == FILLED::NOT_FILLED){
-					cur_node = cur_node -> below_right;
-					continue;
+			for (node* adjacents : cur_node -> adj_node_array){
+				if (adjacents == nullptr){
+					INFNITE_FOUND = true;
+					break;
+				} else {
+					if (adjacents -> filled_with == FILLED::NOT_FILLED){
+						cur_node = adjacents;
+						ADJ_EMPTY = true;
+						break;
+					}
 				}
 			}
 
+			if (INFNITE_FOUND) break;
+			if (ADJ_EMPTY){
+				ADJ_EMPTY = false;
+				continue;
+			}
 
 			// if sand can't got anywhere => break and run next simulation
 			cur_node -> filled_with = FILLED::SAND;

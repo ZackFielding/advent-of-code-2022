@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <tuple>
+#include <array>
 
 std::string _getline(std::ifstream& f); 
 
@@ -14,17 +15,16 @@ std::tuple<int, int, int, ROCK_FORM> getRockFormations(std::ifstream& file);
 
 void printRockForm(const ROCK_FORM* rf);
 
-enum class FILLED : int {NOT_FILLED = 0, ROCK = 1, SAND = 2};
+enum class FILLED : int {NOT_FILLED = 0, ROCK = 1, SAND = 2, INF_BOTTOM = 3};
 
 struct node {
 	std::pair<int, int> xy;
 	FILLED filled_with;
-	node* direct_below;
-	node* below_left;
-	node* below_right;
+	// [0] below, [1] below-left, [2] below-right
+	std::array<node*, 3> adj_node_array;
 	// ctor
 	node() : xy {-1,-1}, filled_with {FILLED::NOT_FILLED},
-		direct_below {nullptr}, below_left {nullptr}, below_right {nullptr} {}
+		adj_node_array {nullptr, nullptr, nullptr} {}
 };
 
 void initializeGraph(node **graph, const int gsize, const int row_size);
