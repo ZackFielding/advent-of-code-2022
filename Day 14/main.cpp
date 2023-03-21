@@ -53,12 +53,35 @@ int main(int argc, char** argv){
 
 		// run sand simulation
 		node *start_node = graph[500-min_x];
-		int p1_ans = runSandSimulation(start_node, graph, gsize, rsize);	
+		int p1_ans = runSandSimulation(start_node).first;	
 		visualizeRockFormations(graph, gsize, rsize);
 		std::printf("%d pieces of sand fall before infinite loop.\n", p1_ans);
 
-		for (int d {0}; d < gsize; ++d) delete graph[d];
-		delete [] graph;
+	
+		auto l_dealloc_graph = [](node** graph, const int graph_size)
+			{
+				for (int d {0}; d < graph_size; ++d) delete graph[d];
+				delete [] graph;
+		        };
+		
+		l_dealloc_graph(graph, gsize);
+
+		// =========================================================================
+		// p2
+		// need to somehow allow for infinite column expansion
+		const int gsize2 = rsize * (max_y+3); // +2 rows
+		node **graph2 = new node*[gsize2];
+
+		initializeGraph(graph2, gsize2, rsize);
+		createRockFormations(&rf, graph2, min_x, rsize, true, gsize2);
+		node *start_node2 = graph2[500-min_x];
+
+		auto p2_pair = runSandSimulation(start_node2, true);
+
+		std::printf("%d pieces of sand fall before opening hole is plugged.\n", p2_pair.first);
+
+		l_dealloc_graph(graph2, gsize2);
+		for (node* n : p2_pair.second) delete n;
 	}
 
 	return 0;

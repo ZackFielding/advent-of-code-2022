@@ -6,6 +6,7 @@
 #include <sstream>
 #include <tuple>
 #include <cstdint>
+#include <functional>
 #include "funcs.hpp"
 
 std::string _getline(std::ifstream& f){
@@ -148,7 +149,8 @@ void initializeGraph(node **graph, const int gsize, const int row_size){
 
 }
 
-void createRockFormations(ROCK_FORM* rf, node** graph, const int min_x, const int row_size){
+void createRockFormations(ROCK_FORM* rf, node** graph, const int min_x, const int row_size, 
+			  bool create_inf_botom, const int gsize2){
 
 	// for translating {x,y} to [n]
 	auto _ni = [min_x, row_size](const int x_pos, const int y_pos)
@@ -196,6 +198,13 @@ void createRockFormations(ROCK_FORM* rf, node** graph, const int min_x, const in
 			}
 		}
 	}
+
+	// p2
+	if (create_inf_botom){
+		for (int b {gsize2 - row_size}; b < gsize2; ++b){
+			graph[b] -> filled_with = FILLED::INF_BOTTOM;
+		}
+	}
 }
 
 void visualizeRockFormations(node** graph, const int gsize, const int row_size){
@@ -226,6 +235,11 @@ void visualizeRockFormations(node** graph, const int gsize, const int row_size){
 				std::cout << "o ";
 				break;
 			}
+
+			case (FILLED::INF_BOTTOM):{
+				std::cout << "= ";
+				break;
+			}
 			default:{
 				std::cout << "? ";
 			}
@@ -235,7 +249,8 @@ void visualizeRockFormations(node** graph, const int gsize, const int row_size){
 	}
 }
 
-int runSandSimulation(node *start_node, node** graph, const int gsize, const int row_size){
+void adhocNodeAllocation(node*, const int, std::vector<node*>*);
+std::pair<int, std::vector<node*>> runSandSimulation(node *start_node, const bool UPDATE_NULL){
 	// all sand starts at row 500 position
 	// sand falls until it can't move down, down-left, or down-right
 	// once a peice of sand encounters a viable nullptr
@@ -245,29 +260,52 @@ int runSandSimulation(node *start_node, node** graph, const int gsize, const int
 	node *cur_node {nullptr};
 	bool INFNITE_FOUND {false};
 	bool ADJ_EMPTY {false};
+	[[maybe_unused]] std::vector<node*> adhoc_nodes {};
+	bool sand_filled = false;
 
 	while (!INFNITE_FOUND){
 		cur_node = start_node;
 		
 		while (1){
 			
-			// should not be needed
+			// will only be called if UPDATE_NULL == true
 			if (cur_node -> filled_with == FILLED::SAND){
 				INFNITE_FOUND = true;
 				break;
 			}
 
+			int adj_idx {0};
 			for (node* adjacents : cur_node -> adj_node_array){
 				if (adjacents == nullptr){
-					INFNITE_FOUND = true;
-					break;
+
+					if (UPDATE_NULL){
+
+						adhocNodeAllocation(cur_node, adj_idx, &adhoc_nodes);
+						// sand has already been alloc
+						// skip over sand filling
+						sand_filled = true;
+						break;
+
+					} else {
+
+						INFNITE_FOUND = true;
+						break;
+					}
+
 				} else {
 					if (adjacents -> filled_with == FILLED::NOT_FILLED){
 						cur_node = adjacents;
 						ADJ_EMPTY = true;
 						break;
 					}
+
+					// fill current if at direct below is inf bottom 
+					if (adjacents -> filled_with == FILLED::INF_BOTTOM){
+						break;
+					}
 				}
+
+				++adj_idx;
 			}
 
 			if (INFNITE_FOUND) break;
@@ -277,7 +315,10 @@ int runSandSimulation(node *start_node, node** graph, const int gsize, const int
 			}
 
 			// if sand can't got anywhere => break and run next simulation
-			cur_node -> filled_with = FILLED::SAND;
+			// ONLY if sand has already been filled by adhoc node alloc func
+			if (!sand_filled) cur_node -> filled_with = FILLED::SAND;
+			else sand_filled = false; // flip to false for next run
+			
 			++sim_runs;
 			break;
 		}
@@ -285,5 +326,61 @@ int runSandSimulation(node *start_node, node** graph, const int gsize, const int
 		//visualizeRockFormations(graph, gsize, row_size);
 		//std::cout << "\n ====================================================================== \n";
 	}
-	return sim_runs;
+	return std::make_pair (sim_runs, adhoc_nodes);
+}
+
+
+// handle new nodes in graph
+// need to keep track of the these new nodes for deletion
+void adhocNodeAllocation(node* top_node, const int adj_idx, std::vector<node*>* adhoc_nodes){
+
+	node *above_node {nullptr}, *cur_node {top_node};
+	
+	// iterate DOWN nodes, checking correct adjacent
+	while (1){
+		// if adjacent is null => alloc new empty-filled node
+		// and add node to adhoc nodes
+		if (cur_node -> adj_node_array[adj_idx] == nullptr){
+
+			node *temp = nullptr;
+			temp = new node {}; // alloc new node
+			cur_node -> adj_node_array[adj_idx] = temp; // assign new node to adj of cur
+			adhoc_nodes -> push_back(temp);
+
+			if (cur_node -> adj_node_array[0] -> filled_with == FILLED::INF_BOTTOM){
+
+				temp -> filled_with = FILLED::INF_BOTTOM;
+
+				// if cur node is sitting ontop of inf bottom
+				// above node will be null
+				// fill cur node with sand and break
+				// else fill above node with sand
+				if (above_node == nullptr){
+					cur_node -> filled_with = FILLED::SAND;
+				} else {
+					above_node -> filled_with = FILLED::SAND;
+				}
+
+				break;
+
+			} else {
+
+				temp -> filled_with = FILLED::NOT_FILLED;
+				above_node = temp;
+				cur_node = cur_node -> adj_node_array[0];
+			}
+
+		// else if adjacent is sand => change prev node filled to SAND
+		} else if (cur_node -> adj_node_array[adj_idx] -> filled_with == FILLED::SAND){
+
+			above_node -> filled_with = FILLED::SAND;
+			break;
+
+		} else if (cur_node -> adj_node_array[adj_idx] -> filled_with == FILLED::NOT_FILLED){
+
+			above_node = cur_node -> adj_node_array[adj_idx];
+			cur_node = cur_node -> adj_node_array[0];
+
+		}
+	}
 }
