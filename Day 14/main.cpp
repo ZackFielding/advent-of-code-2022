@@ -4,6 +4,12 @@
 #include <tuple>
 #include <cstdint>
 #include "funcs.hpp"
+#include "deq_graph.cpp"
+
+/* TO DO:
+ [x]	working deque graph
+ [] implement sand simulation in deque graph	
+*/
 
 int main(int argc, char** argv){
 
@@ -16,7 +22,7 @@ int main(int argc, char** argv){
 
 	if (file){
 
-		int min_x {}, max_x {}, max_y {};
+		unsigned min_x {}, max_x {}, max_y {};
 		ROCK_FORM rf {};
 
 		{
@@ -47,9 +53,15 @@ int main(int argc, char** argv){
 		// untested
 		createRockFormations(&rf, graph, min_x, rsize);
 
-		// for testing
+		///////////// testing new graph ///////////////////
+		std::clog << "Original graph:\n";
 		visualizeRockFormations(graph, gsize, rsize);
 
+		std::clog << "Updated graph:\n";
+		degraph dg {min_x, max_x, max_y};
+		dg.create_rock_formations(&rf);
+		dg.print_graph();
+		////////////////////////////////////////
 
 		// run sand simulation
 		node *start_node = graph[500-min_x];
@@ -65,23 +77,6 @@ int main(int argc, char** argv){
 		        };
 		
 		l_dealloc_graph(graph, gsize);
-
-		// =========================================================================
-		// p2
-		// need to somehow allow for infinite column expansion
-		const int gsize2 = rsize * (max_y+3); // +2 rows
-		node **graph2 = new node*[gsize2];
-
-		initializeGraph(graph2, gsize2, rsize);
-		createRockFormations(&rf, graph2, min_x, rsize, true, gsize2);
-		node *start_node2 = graph2[500-min_x];
-
-		auto p2_pair = runSandSimulation(start_node2, true);
-
-		std::printf("%d pieces of sand fall before opening hole is plugged.\n", p2_pair.first);
-
-		l_dealloc_graph(graph2, gsize2);
-		for (node* n : p2_pair.second) delete n;
 	}
 
 	return 0;

@@ -249,7 +249,6 @@ void visualizeRockFormations(node** graph, const int gsize, const int row_size){
 	}
 }
 
-void adhocNodeAllocation(node*, const int, std::vector<node*>*);
 std::pair<int, std::vector<node*>> runSandSimulation(node *start_node, const bool UPDATE_NULL){
 	// all sand starts at row 500 position
 	// sand falls until it can't move down, down-left, or down-right
@@ -261,7 +260,12 @@ std::pair<int, std::vector<node*>> runSandSimulation(node *start_node, const boo
 	bool INFNITE_FOUND {false};
 	bool ADJ_EMPTY {false};
 	[[maybe_unused]] std::vector<node*> adhoc_nodes {};
-	bool sand_filled = false;
+
+
+	// NEED TO RETURN THIS VECTOR
+	node* lsa {nullptr};
+	node* prev {nullptr};
+	int lka {};
 
 	while (!INFNITE_FOUND){
 		cur_node = start_node;
@@ -275,16 +279,78 @@ std::pair<int, std::vector<node*>> runSandSimulation(node *start_node, const boo
 			}
 
 			int adj_idx {0};
+			int non_null_side {};
 			for (node* adjacents : cur_node -> adj_node_array){
+
 				if (adjacents == nullptr){
 
 					if (UPDATE_NULL){
+						//std::clog << "new node.. ";	
+						// alloc new node && push into tracking vector
+						node * nn = new node {};
+						adhoc_nodes.push_back(nn);
 
-						adhocNodeAllocation(cur_node, adj_idx, &adhoc_nodes);
-						// sand has already been alloc
-						// skip over sand filling
-						sand_filled = true;
+						// this assumes that the first newly created node will always be
+						// below-left or below-right of current node
+						
+						if (adj_idx != 0){
+
+							// note what side will NOT be null
+							non_null_side = (adj_idx == 1) ? 2 : 1;
+
+							// keep track of side being checked
+							lka = adj_idx;
+
+							// get last current node (this will be at the same level as new node)
+							lsa = cur_node -> adj_node_array[0];
+							nn -> adj_node_array[non_null_side] = lsa -> adj_node_array [0];
+
+							// just assume it will be non-filled
+							ADJ_EMPTY = true;
+
+							// `lsa` does not get advanced yet
+							// need to use LSA to check if we might overwrite a previously created node
+							lsa = lsa -> adj_node_array[0];
+
+						} else {
+
+							// check to ensure you don't overwrite nodes as you descend
+							if (lsa -> adj_node_array[lka] != nullptr){
+								cur_node = lsa -> adj_node_array[lka];
+
+								// if found node is empty => fill it with sand (exit adjacent loop)
+								if (cur_node -> filled_with == FILLED::NOT_FILLED){
+									ADJ_EMPTY = true;
+									break;
+								} else {
+								// if not empty, keep checking adjancets
+									continue;
+								}
+							}
+
+							// assign previous node bottom to new node
+							prev -> adj_node_array[0] = nn;
+
+							// check if inf bottom
+							if (lsa -> filled_with == FILLED::INF_BOTTOM){
+								nn -> filled_with = FILLED::INF_BOTTOM;
+								std::clog << "INF BOTTOM HIT ";	
+								// prev node now needs to be filled with sand
+								// so set cur_node to prev_node and break
+								cur_node = prev;
+								break; // need to break to prevent cur node overwrite
+							} else {
+								// if not inf bottom - assign adjacent node
+								nn -> adj_node_array[non_null_side] = lsa -> adj_node_array[0];
+								lsa = lsa -> adj_node_array[0];
+							}
+						}
+
+						// assign previous to new node for next iteration
+						prev = nn;
+						cur_node = nn;
 						break;
+
 
 					} else {
 
@@ -299,8 +365,9 @@ std::pair<int, std::vector<node*>> runSandSimulation(node *start_node, const boo
 						break;
 					}
 
-					// fill current if at direct below is inf bottom 
+					// fill current if direct below is inf bottom 
 					if (adjacents -> filled_with == FILLED::INF_BOTTOM){
+						std::clog << "BOTTOM ";
 						break;
 					}
 				}
@@ -314,10 +381,7 @@ std::pair<int, std::vector<node*>> runSandSimulation(node *start_node, const boo
 				continue;
 			}
 
-			// if sand can't got anywhere => break and run next simulation
-			// ONLY if sand has already been filled by adhoc node alloc func
-			if (!sand_filled) cur_node -> filled_with = FILLED::SAND;
-			else sand_filled = false; // flip to false for next run
+			cur_node -> filled_with = FILLED::SAND;
 			
 			++sim_runs;
 			break;
@@ -327,60 +391,4 @@ std::pair<int, std::vector<node*>> runSandSimulation(node *start_node, const boo
 		//std::cout << "\n ====================================================================== \n";
 	}
 	return std::make_pair (sim_runs, adhoc_nodes);
-}
-
-
-// handle new nodes in graph
-// need to keep track of the these new nodes for deletion
-void adhocNodeAllocation(node* top_node, const int adj_idx, std::vector<node*>* adhoc_nodes){
-
-	node *above_node {nullptr}, *cur_node {top_node};
-	
-	// iterate DOWN nodes, checking correct adjacent
-	while (1){
-		// if adjacent is null => alloc new empty-filled node
-		// and add node to adhoc nodes
-		if (cur_node -> adj_node_array[adj_idx] == nullptr){
-
-			node *temp = nullptr;
-			temp = new node {}; // alloc new node
-			cur_node -> adj_node_array[adj_idx] = temp; // assign new node to adj of cur
-			adhoc_nodes -> push_back(temp);
-
-			if (cur_node -> adj_node_array[0] -> filled_with == FILLED::INF_BOTTOM){
-
-				temp -> filled_with = FILLED::INF_BOTTOM;
-
-				// if cur node is sitting ontop of inf bottom
-				// above node will be null
-				// fill cur node with sand and break
-				// else fill above node with sand
-				if (above_node == nullptr){
-					cur_node -> filled_with = FILLED::SAND;
-				} else {
-					above_node -> filled_with = FILLED::SAND;
-				}
-
-				break;
-
-			} else {
-
-				temp -> filled_with = FILLED::NOT_FILLED;
-				above_node = temp;
-				cur_node = cur_node -> adj_node_array[0];
-			}
-
-		// else if adjacent is sand => change prev node filled to SAND
-		} else if (cur_node -> adj_node_array[adj_idx] -> filled_with == FILLED::SAND){
-
-			above_node -> filled_with = FILLED::SAND;
-			break;
-
-		} else if (cur_node -> adj_node_array[adj_idx] -> filled_with == FILLED::NOT_FILLED){
-
-			above_node = cur_node -> adj_node_array[adj_idx];
-			cur_node = cur_node -> adj_node_array[0];
-
-		}
-	}
 }

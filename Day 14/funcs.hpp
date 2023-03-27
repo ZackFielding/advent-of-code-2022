@@ -40,4 +40,9 @@ void visualizeRockFormations(node** graph, const int gsize, const int row_size);
 
 std::pair<int, std::vector<node*>> runSandSimulation(node *start_node, const bool = false);
 
+// above node && if at bottom level
+node* adhocNodeInit(node* above_node, bool at_bottom);
+
+bool atBottom(node*);
+
 #endif
