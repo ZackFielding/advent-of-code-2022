@@ -3,12 +3,15 @@
 #include <vector>
 #include <tuple>
 #include <cstdint>
-#include "funcs.hpp"
-#include "deq_graph.cpp"
+#include "funcs.hpp" // revised -> only used for file parsing
+#include "deq_graph.cpp" // all graph/node data/functions
 
 /* TO DO:
  [x]	working deque graph
- [] implement sand simulation in deque graph	
+ [x]	implement sand simulation in deque graph
+ [x]	working p1 solution using deque graph
+ [x]	working p2 solution using deque graph
+ [.]	create a header for graph cpp file
 */
 
 int main(int argc, char** argv){
@@ -36,47 +39,26 @@ int main(int argc, char** argv){
 
 		std::printf("MIN X : %d, MAX X : %d, MAX Y : %d.\n", min_x, max_x, max_y);
 
-		// test
-		printRockForm(&rf);
-
 		// create graph
 		const int gsize = (max_x - min_x + 1) * (max_y+1);
 		const int rsize = max_x - min_x + 1;
-		node** graph = new node*[gsize];
 	
 		std::printf("gsize: %d .. rsize: %d .. csize: %d\n", gsize, rsize, max_y+1);
 		std::printf("min x: %d .. max x: %d .. max y: %d.\n", min_x, max_x, max_y);
 
-		// untested
-		initializeGraph(graph, gsize, rsize);
-
-		// untested
-		createRockFormations(&rf, graph, min_x, rsize);
-
-		///////////// testing new graph ///////////////////
-		std::clog << "Original graph:\n";
-		visualizeRockFormations(graph, gsize, rsize);
-
-		std::clog << "Updated graph:\n";
+		std::clog << "Graph prior to simulation:\n";
 		degraph dg {min_x, max_x, max_y};
 		dg.create_rock_formations(&rf);
 		dg.print_graph();
-		////////////////////////////////////////
 
-		// run sand simulation
-		node *start_node = graph[500-min_x];
-		int p1_ans = runSandSimulation(start_node).first;	
-		visualizeRockFormations(graph, gsize, rsize);
-		std::printf("%d pieces of sand fall before infinite loop.\n", p1_ans);
+		unsigned ret = dg.run_sand_simulation(500u, 0u);
+		std::printf("[P1 solution] %u sand dropped before infinite loop.\n", ret);
 
-	
-		auto l_dealloc_graph = [](node** graph, const int graph_size)
-			{
-				for (int d {0}; d < graph_size; ++d) delete graph[d];
-				delete [] graph;
-		        };
-		
-		l_dealloc_graph(graph, gsize);
+		degraph dg2 {min_x, max_x, (max_y+2)};
+		dg2.create_rock_formations(&rf, true); // add infinite bottom
+		dg2.print_graph();
+		unsigned ret2 = dg2.run_sand_simulation(500u, 0u, true);
+		std::printf("[P2 solution] %u sand dropped before filling entry point.\n", ret2);
 	}
 
 	return 0;
