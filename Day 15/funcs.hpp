@@ -22,5 +22,6 @@ void print_coord(const COORD&);
 i32_4tup compute_grid_dimensions(const COORD&);
 i32vp y_LOI_vectors(const COORD&, const int32_t);
 int32_t count_vector_overlap(const i32vp&);
+int32_t count_unique_pairs(const COORD& coord, const int32_t yLOI);
 
 #endif

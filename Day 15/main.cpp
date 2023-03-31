@@ -8,8 +8,7 @@
 
 /* 
 TODO
-- Appears to computer vectors on LOI correctly, but computing the overlap
-    is NOT working correctly
+[x] p1 solution
 */
 
 int main(int argc, char** argv){
@@ -58,7 +57,7 @@ int main(int argc, char** argv){
         std::printf("y min: %d, y max: %d.\n", std::get<2>(d), std::get<3>(d));
 
         // get horizontal vectors that lay on y line of interest
-        int32_t yLOI = 10;
+        int32_t yLOI = 2000000;
         i32vp vec_p = y_LOI_vectors(coord, yLOI);
 
         // sort vectors in ascending order based on first x pos
@@ -69,15 +68,12 @@ int main(int argc, char** argv){
         std::clog << "Number of visible points on line: " << visible_on_yLOI << '\n';
 
         // count number of beacons on yLOI
-        const int32_t beacon_count = std::count_if(
-                                            coord.begin(),
-                                            coord.end(),
-                                            [yLOI] (auto& arr) { return arr[1] == yLOI; }
-                                        );
+        const int32_t beacon_count = count_unique_pairs(coord, yLOI);
 
         std::clog << "Number of beacons on line: " << beacon_count << '\n';
         visible_on_yLOI -= beacon_count;
 
+        // p1 solution
         std::printf("%d spaces where a beacon can't be on line %d.\n", visible_on_yLOI, yLOI);
     }
 

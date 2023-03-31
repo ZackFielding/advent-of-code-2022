@@ -8,6 +8,7 @@
 #include <string_view>
 #include <cstdint>
 #include <algorithm>
+#include <set>
 #include "funcs.hpp"
 
 COORD get_file_coord(std::ifstream& file){
@@ -142,13 +143,14 @@ int32_t count_vector_overlap(const i32vp& vp){
     
     int32_t number_overlap {0};
     int32_t min {vp[0].first}, max {vp[0].second};
+    auto inc_overlap = [&]() { number_overlap += std::abs(max-min) + 1; };
 
     // first pair is used as baseline -> iterate starting at ++begin()
     for (auto iter {vp.begin()+1}; iter != vp.end(); ++iter){
 
         // if gap found -> computer number of gaps && set new min/max
         if (iter -> first > max){
-            number_overlap += std::abs(max-min) + 1;
+            inc_overlap();
             min = iter -> first;
             max = iter -> second;
 
@@ -159,7 +161,24 @@ int32_t count_vector_overlap(const i32vp& vp){
         }
     }
 
+    // need to account for final vector
+    inc_overlap();
+
     return number_overlap;
+}
+
+int32_t count_unique_pairs(const COORD& coord, const int32_t yLOI){
+    std::set<std::pair<int32_t, int32_t>> i32set;
+    int32_t count {0};
+
+    for (const auto& arr : coord){
+        if (arr[3] == yLOI){
+            // check to see if duplicate
+            auto ret = i32set.emplace( std::make_pair(arr[2], arr[3]) ); 
+            if ( ret.second ) ++count;
+        }
+    }
+    return count;
 }
 
 #endif
