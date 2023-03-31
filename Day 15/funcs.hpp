@@ -11,8 +11,6 @@
 using COORD = std::vector < std::array < int32_t, 5 > >;
 using i32_z = std::pair < int32_t, std::size_t >;
 using i32_4tup = std::tuple < int32_t, int32_t, int32_t, int32_t >;
-struct node;
-using GRID = std::vector < std::vector < node > >;
 using i32vp = std::vector<std::pair<int32_t, int32_t>>;
 
 std::string get_string(std::ifstream&);
