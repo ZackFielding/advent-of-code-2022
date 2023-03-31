@@ -9,6 +9,7 @@
 /* 
 TODO
 [x] p1 solution
+[]  redefine count_vector_overlap() to work for p2
 */
 
 int main(int argc, char** argv){

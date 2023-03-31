@@ -181,4 +181,48 @@ int32_t count_unique_pairs(const COORD& coord, const int32_t yLOI){
     return count;
 }
 
+// modifying prev def to work for p2 [UNDER CONSTRUCTION]
+int32_t constrained_count_vector_overlap(const i32vp& vp){
+    
+    int32_t number_overlap {0};
+    int32_t min { /* ? */ }, max { /* ? */ }; // max = 4,000,000?
+    auto inc_overlap = [&]() { number_overlap += std::abs(max-min) + 1; };
+
+    /*
+        - I believe for this to work in its current state, I need to 
+            find the min/max starting point
+        - this starting point needs to be either
+            (a) a vector starting at x = 0
+            or
+            (b) the vector with an origin closes to x = 0
+    */
+
+    for (auto iter {vp.begin()+1}; iter != vp.end(); ++iter){
+
+        /*
+            - if gap found -> computer number of gaps && set new min/max
+            - if this case is ever met, STOP
+            - this case if only ever met when there is a gap
+            - return ++max (don't set max to iter -> second)
+        */
+
+        if (iter -> first > max){
+            return ++max;
+            //inc_overlap();
+            //min = iter -> first;
+            //max = iter -> second;
+
+        } else if (iter -> second > max){
+            // if no gap found (i.e., p.first resides within current range)
+            // update max
+            max = iter -> second;
+        }
+    }
+
+    // HOW TO HANDLE A GAP AT THE END?
+    inc_overlap();
+
+    return number_overlap;
+}
+
 #endif
