@@ -6,6 +6,12 @@
 #include <tuple>
 #include "funcs.hpp"
 
+/* 
+TODO
+- Appears to computer vectors on LOI correctly, but computing the overlap
+    is NOT working correctly
+*/
+
 int main(int argc, char** argv){
 
     if (argc <= 1){
@@ -39,10 +45,40 @@ int main(int argc, char** argv){
                 return ar1[4] < ar2[4];
         };
 
-        int32_t max_bs_dist = std::max_element(coord.begin(), coord.end(), _max) -> at(4);
+        [[maybe_unused]] int32_t max_bs_dist = std::max_element(coord.begin(), coord.end(), _max) -> at(4);
 
-        // compute grid dimensions 
+        /*  COMPUTE GRID DIMENSIONS
+        Need to determine max & min x and y values for creating the grid
+        Need to compute this for every beacon in each direction (x4)
+        */
 
+        i32_4tup d = compute_grid_dimensions(coord);
+
+        std::printf("x min: %d, x max: %d.\n", std::get<0>(d), std::get<1>(d));
+        std::printf("y min: %d, y max: %d.\n", std::get<2>(d), std::get<3>(d));
+
+        // get horizontal vectors that lay on y line of interest
+        int32_t yLOI = 10;
+        i32vp vec_p = y_LOI_vectors(coord, yLOI);
+
+        // sort vectors in ascending order based on first x pos
+        std::sort(vec_p.begin(), vec_p.end(), [] (auto j, auto k) {return j.first < k.first; });
+
+        // compute number of gaps on y LOI (does not consider beacons)
+        int32_t  visible_on_yLOI = count_vector_overlap(vec_p);
+        std::clog << "Number of visible points on line: " << visible_on_yLOI << '\n';
+
+        // count number of beacons on yLOI
+        const int32_t beacon_count = std::count_if(
+                                            coord.begin(),
+                                            coord.end(),
+                                            [yLOI] (auto& arr) { return arr[1] == yLOI; }
+                                        );
+
+        std::clog << "Number of beacons on line: " << beacon_count << '\n';
+        visible_on_yLOI -= beacon_count;
+
+        std::printf("%d spaces where a beacon can't be on line %d.\n", visible_on_yLOI, yLOI);
     }
 
     return 0;

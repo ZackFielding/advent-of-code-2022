@@ -85,4 +85,81 @@ void print_coord(const COORD& coord){
 
 }
 
+i32_4tup compute_grid_dimensions(const COORD& coord){
+    
+    // min x, max x, min y, max y
+    int32_t min_x {INT32_MAX}, max_x {INT32_MIN}, min_y {INT32_MAX}, max_y {INT32_MIN};
+    int32_t mag_cache {}, cache {};
+
+    for (const auto& arr : coord){
+        // cache vector magnitude
+        mag_cache = arr[4];
+        // x
+        if ( (cache = arr[0] - mag_cache) < min_x) min_x = cache;
+        if ( (cache = arr[0] + mag_cache) > max_x) max_x = cache;
+        // y
+        if ( (cache = arr[1] - mag_cache) < min_y) min_y = cache;
+        if ( (cache = arr[1] + mag_cache) > max_y) max_y = cache;
+    }
+
+    return {min_x, max_x, min_y, max_y};
+}
+
+i32vp y_LOI_vectors(const COORD& coord, const int32_t y_LOI){
+
+    std::vector<std::pair<int32_t, int32_t>> vec_i32p;
+
+    for (const auto& arr : coord){
+
+        // check to see if vector would ever intercept y LOI
+        // skip calculations if not
+        if (arr[1] <= y_LOI){
+            if ( arr[1] + arr[4] < y_LOI) continue;
+        } else {
+            if ( arr[1] - arr[4] > y_LOI) continue;
+        }
+
+        // now that it's gartuneed to intercept the y LOI
+        // determine the max horizontal line created
+        // e.g., 8,7,9, y=10
+        // i. find the absolute integer needed to get to y LOI (y beacon - LOI)
+        int32_t gap = (int32_t) std::abs( (arr[1] - y_LOI) );
+
+        // ii. compute the length of the x_vector that remains after accounting
+        // for y vector needed to get to LOI
+        int32_t x_mag = arr[4] - gap;
+
+
+        // iii. x beacon pos +/- x_mag gives == the covered points on LOI
+        // and push into tracking vector
+        vec_i32p.push_back( { (arr[0] - x_mag), (arr[0] + x_mag) } );
+        std::cout << "pair: " << vec_i32p.back().first << ", " << vec_i32p.back().second << '\n';
+    }
+    return vec_i32p;
+}
+
+int32_t count_vector_overlap(const i32vp& vp){
+    
+    int32_t number_overlap {0};
+    int32_t min {vp[0].first}, max {vp[0].second};
+
+    // first pair is used as baseline -> iterate starting at ++begin()
+    for (auto iter {vp.begin()+1}; iter != vp.end(); ++iter){
+
+        // if gap found -> computer number of gaps && set new min/max
+        if (iter -> first > max){
+            number_overlap += std::abs(max-min) + 1;
+            min = iter -> first;
+            max = iter -> second;
+
+        } else if (iter -> second > max){
+            // if no gap found (i.e., p.first resides within current range)
+            // update max
+            max = iter -> second;
+        }
+    }
+
+    return number_overlap;
+}
+
 #endif
