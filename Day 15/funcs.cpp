@@ -9,6 +9,8 @@
 #include <cstdint>
 #include <algorithm>
 #include <set>
+#include <span>
+#include <functional>
 #include "funcs.hpp"
 
 COORD get_file_coord(std::ifstream& file){
@@ -134,19 +136,19 @@ i32vp y_LOI_vectors(const COORD& coord, const int32_t y_LOI){
         // iii. x beacon pos +/- x_mag gives == the covered points on LOI
         // and push into tracking vector
         vec_i32p.push_back( { (arr[0] - x_mag), (arr[0] + x_mag) } );
-        std::cout << "pair: " << vec_i32p.back().first << ", " << vec_i32p.back().second << '\n';
+        //std::cout << "pair: " << vec_i32p.back().first << ", " << vec_i32p.back().second << '\n';
     }
     return vec_i32p;
 }
 
-int32_t count_vector_overlap(const i32vp& vp){
+int32_t count_vector_overlap(i32p_span sp){
     
     int32_t number_overlap {0};
-    int32_t min {vp[0].first}, max {vp[0].second};
+    int32_t min { sp.front().first }, max { sp.front().second };
     auto inc_overlap = [&]() { number_overlap += std::abs(max-min) + 1; };
 
     // first pair is used as baseline -> iterate starting at ++begin()
-    for (auto iter {vp.begin()+1}; iter != vp.end(); ++iter){
+    for (auto iter {sp.begin()+1}; iter != sp.end(); ++iter){
 
         // if gap found -> computer number of gaps && set new min/max
         if (iter -> first > max){
@@ -181,48 +183,89 @@ int32_t count_unique_pairs(const COORD& coord, const int32_t yLOI){
     return count;
 }
 
-// modifying prev def to work for p2 [UNDER CONSTRUCTION]
-int32_t constrained_count_vector_overlap(const i32vp& vp){
+/*
+    I don't think it's efficient to re-use part 1 vector count func
+        as it would require a lots of repetitive if-else checks
+*/
+int32_t constrained_count_vector_overlap(i32p_span sp, const int32_t upper_bound){
     
+    // resize to proper x-range (0 - 4,000,000)
+    sp = resize_span(sp, upper_bound); 
+
     int32_t number_overlap {0};
-    int32_t min { /* ? */ }, max { /* ? */ }; // max = 4,000,000?
+    int32_t min { sp.front().first }, max { sp.front().second }; 
     auto inc_overlap = [&]() { number_overlap += std::abs(max-min) + 1; };
 
-    /*
-        - I believe for this to work in its current state, I need to 
-            find the min/max starting point
-        - this starting point needs to be either
-            (a) a vector starting at x = 0
-            or
-            (b) the vector with an origin closes to x = 0
-    */
-
-    for (auto iter {vp.begin()+1}; iter != vp.end(); ++iter){
-
-        /*
-            - if gap found -> computer number of gaps && set new min/max
-            - if this case is ever met, STOP
-            - this case if only ever met when there is a gap
-            - return ++max (don't set max to iter -> second)
-        */
+    for (auto iter {sp.begin()+1}; iter != sp.end(); ++iter){
 
         if (iter -> first > max){
-            return ++max;
-            //inc_overlap();
-            //min = iter -> first;
-            //max = iter -> second;
+
+            if ( (iter -> first - max) > 1){
+                return ++max;
+            }
+
+            inc_overlap();
+            min = iter -> first;
+            max = iter -> second;
 
         } else if (iter -> second > max){
-            // if no gap found (i.e., p.first resides within current range)
-            // update max
             max = iter -> second;
         }
     }
 
-    // HOW TO HANDLE A GAP AT THE END?
-    inc_overlap();
+    // check for gap at final position
+    if (upper_bound - max > 1) return (max + 1);
+    return -1;
+}
 
-    return number_overlap;
+// resizes span to only include vectors within given range
+i32p_span resize_span(i32p_span sp, const int32_t ub){
+
+    std::size_t offset = _modify_span(sp, [](i32p p) { return p.first >= 0; } );
+    sp = sp.subspan(offset);
+
+    // what happens when predicate is never true? -> offset == span.size()
+    offset = _modify_span(sp, [ub](i32p p) { return p.first >= ub; } );
+    if (offset >= sp.size()) return sp;
+    return sp.first(offset+1);
+}
+
+int32_t _modify_span(i32p_span sp, std::function<int32_t(i32p)> predicate){
+
+    // find upper cut off threshold -> determined my predicate
+    // this cuts off all values above this threshold
+    i32p_span nonly_span = sp.first( span_find_and_count(sp, predicate) );
+
+    // find pair with greatest end pos -> returns iterator to first greatest element
+    auto _l = [] (i32p j, i32p k)->bool { return j.second < k.second; };
+    auto gi = std::max_element(nonly_span.begin(), nonly_span.end(), _l);
+
+    return static_cast<int32_t> (std::distance(nonly_span.begin(), gi));
+}
+std::size_t span_find_and_count(i32p_span sp, std::function<bool(const i32p)> pred){
+
+    std::size_t offset {0};
+    for (const auto& p : sp){
+        if (pred(p)){
+            return offset;
+        }
+        ++offset;
+    }
+    return offset;
+}
+
+void adjacent_find_and_swap(i32vp& vp){
+
+    for (auto iter {vp.begin()}; iter != (vp.end()-1); ++iter){
+
+        // if adjacent first's are equal => ensure seconds are in ascending order
+        if (iter -> first == (iter+1)->first){
+            std::pair<int32_t, int32_t> temp_pair;
+            temp_pair = *iter;
+            *iter = *(iter+1);
+            *(iter+1) = temp_pair;
+        }
+    }
 }
 
 #endif
